@@ -1,0 +1,22 @@
+services:
+  web:
+    build: .
+    command: gunicorn --bind 0.0.0.0:8000 --access-logfile - vynle_app.wsgi:application
+    expose:
+      - 8000
+    env_file:
+      - ./vynle_app/.env
+
+  nginx: # Serves backend and acts as reverse-proxy
+    build: ./proxy
+    ports:
+      - 443:443
+
+  db:  # Just doing this now for simplicity
+    image: postgres:15
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
