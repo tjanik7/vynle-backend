@@ -60,28 +60,25 @@ class RegisterAPI(generics.GenericAPIView):
     serializer_class = RegisterSerializer
 
     def post(self, request, *args, **kwargs):
-        try:
-            account_data, profile_data = _split_user_data(request.data)
+        account_data, profile_data = _split_user_data(request.data)
 
-            serializer = self.get_serializer(data=account_data)
-            serializer.is_valid(raise_exception=True)
-            if serializer.is_valid:
-                account = serializer.save()
-            else:
-                raise Exception(serializer.errors)
+        serializer = self.get_serializer(data=account_data)
+        serializer.is_valid(raise_exception=True)
+        if serializer.is_valid:
+            account = serializer.save()
+        else:
+            raise Exception(serializer.errors)
 
-            profile_data['account'] = account.id
+        profile_data['account'] = account.id
 
-            # Calls ProfileRegistrationSerializer.create(), which also creates a new FavAlbums instance
-            # to associate with this profile instance
-            profile_ser = ProfileRegistrationSerializer(data=profile_data)
+        # Calls ProfileRegistrationSerializer.create(), which also creates a new FavAlbums instance
+        # to associate with this profile instance
+        profile_ser = ProfileRegistrationSerializer(data=profile_data)
 
-            if profile_ser.is_valid(raise_exception=True):
-                profile_ser.save()
-            else:
-                raise Exception(profile_ser.errors)
-        except Exception as e:
-            raise Exception(e)
+        if profile_ser.is_valid(raise_exception=True):
+            profile_ser.save()
+        else:
+            raise Exception(profile_ser.errors)
 
         return Response({
             'account': AccountSerializer(account, context=self.get_serializer_context()).data,
@@ -96,6 +93,7 @@ class LoginAPI(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         account = serializer.validated_data
+
         return Response({
             'account': AccountSerializer(account, context=self.get_serializer_context()).data,
             'token': AuthToken.objects.create(account)[1]  # associates new token with specified account
