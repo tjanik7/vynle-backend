@@ -157,9 +157,12 @@ class GetCurrentUserSpotifyProfile(APIView):
             headers = get_header(user)
             response = get('https://api.spotify.com/v1/me', headers=headers).json()
 
-            spotify_username = response.get('id')
+            spotify_username = response.get('id', '')  # Second arg is default value if key not in dict
+            user_spotify_email = response.get('email', '')
+
             return Response({
                 'id': spotify_username,
+                'email': user_spotify_email,
             },
                 status=status.HTTP_200_OK
             )
@@ -171,7 +174,7 @@ class AuthURL(APIView):
 
     def get(self, request, format=None):
         # Scopes of spotify data we would like to access from user - found in spotify docs
-        scopes = 'user-top-read'
+        scopes = 'user-top-read user-read-email'
 
         # Prepares the url but does not send a reqeust
         url = Request('GET', 'https://accounts.spotify.com/authorize', params={
