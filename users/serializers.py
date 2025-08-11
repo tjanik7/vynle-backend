@@ -43,18 +43,6 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         exclude = ('following', 'id')
 
-    def create(self, validated_data):
-        profile = Profile.objects.create(
-            account=validated_data['account'],
-            # birthday=  # Implement this later
-            first=validated_data['first'],
-            last=validated_data['last']
-        )
-
-        favalbum_instance = FavAlbums.objects.create(profile=profile)
-        favalbum_instance.save()
-        return profile
-
 
 # Used when registering new users
 class ProfileRegistrationSerializer(serializers.ModelSerializer):

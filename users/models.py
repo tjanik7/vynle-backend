@@ -1,7 +1,9 @@
-# Users
+# User models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.db import models
 from django.utils import timezone
+
+import spotify # Cannot directly import spotify.models.FavAlbums due to circular import error
 
 
 class AccountManager(BaseUserManager):
@@ -18,10 +20,17 @@ class AccountManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+    # Django CLI knows how to call this method since my user model is configured in settings.py
+    # and "create_superuser()" is the standard name for this method
     def create_superuser(self, email, username, password=None):
         user = self.create_user(email=email, username=username, password=password)
         user.is_admin = True
+
         user.save(using=self._db)
+
+        profile = Profile.objects.create(account=user)
+        spotify.models.FavAlbums.objects.create(profile=profile)
+
         return user
 
 
