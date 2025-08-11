@@ -5,8 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Profile, Account
-from .serializers import RegisterSerializer, AccountSerializer, LoginSerializer, ProfileSerializer, \
-    ProfileRegistrationSerializer
+from .serializers import AccountSerializer, LoginSerializer, ProfileSerializer
 
 
 class HealthcheckViewSet(APIView):
@@ -57,31 +56,16 @@ class ProfileViewSet(APIView):
 
 # Creates user Account & Profile
 class RegisterAPI(generics.GenericAPIView):
-    serializer_class = RegisterSerializer
-
     def post(self, request, *args, **kwargs):
-        account_data, profile_data = _split_user_data(request.data)
+        account_serializer = AccountSerializer(data=request.data)
 
-        serializer = self.get_serializer(data=account_data)
-        serializer.is_valid(raise_exception=True)
-        if serializer.is_valid:
-            account = serializer.save()
+        if account_serializer.is_valid(raise_exception=True):
+            account = account_serializer.save()
         else:
-            raise Exception(serializer.errors)
-
-        profile_data['account'] = account.id
-
-        # Calls ProfileRegistrationSerializer.create(), which also creates a new FavAlbums instance
-        # to associate with this profile instance
-        profile_ser = ProfileRegistrationSerializer(data=profile_data)
-
-        if profile_ser.is_valid(raise_exception=True):
-            profile_ser.save()
-        else:
-            raise Exception(profile_ser.errors)
+            raise Exception(account_serializer.errors)
 
         return Response({
-            'account': AccountSerializer(account, context=self.get_serializer_context()).data,
+            'account': account_serializer.data,
             'token': AuthToken.objects.create(account)[1]  # associates new token with specified account
         })
 
@@ -163,19 +147,3 @@ class AccountAPI(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
-
-
-def _split_user_data(data):
-    # Splits dict of user registration data into Account data and Profile data
-
-    account_data = {
-        'email': data['email'],
-        'username': data['username'],
-        'password': data['password'],
-    }
-    profile_data = {
-        'first': data['first'],
-        'last': data['last'],
-        # 'birthday': data['birthday'],  # Not implemented yet - needs to be added to frontend form
-    }
-    return account_data, profile_data

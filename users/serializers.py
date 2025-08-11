@@ -7,20 +7,17 @@ from .models import Account, Profile
 
 
 class AccountSerializer(serializers.ModelSerializer):
-    # Pull first and last name from user's profile when serializing to json
-    first = serializers.CharField(source='profile.first', read_only=True)
-    last = serializers.CharField(source='profile.last', read_only=True)
+    # Reference fields in related objects that we want to serialize
+    # Read only fields (only used for serialization)
+    first = serializers.CharField(source='profile.first')
+    last = serializers.CharField(source='profile.last')
+
 
     class Meta:
         model = Account
-        fields = ('id', 'email', 'username', 'first', 'last')
+        fields = ('id', 'email', 'username', 'password', 'first', 'last')
 
-
-# For account creation
-class RegisterSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Account
-        fields = ('id', 'email', 'username', 'password')
+        # Write only fields are only used for deserialization
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -31,6 +28,16 @@ class RegisterSerializer(serializers.ModelSerializer):
             validated_data['username'],
             validated_data['password'],
         )
+
+        profile = Profile.objects.create(
+            account=user_account,
+            # birthday=  # Implement this later
+            first=validated_data['profile']['first'],
+            last=validated_data['profile']['last']
+        )
+
+        FavAlbums.objects.create(profile=profile)
+
         return user_account
 
 
@@ -42,25 +49,6 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         exclude = ('following', 'id')
-
-
-# Used when registering new users
-class ProfileRegistrationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = '__all__'
-
-    def create(self, validated_data):
-        profile = Profile.objects.create(
-            account=validated_data['account'],
-            # birthday=  # Implement this later
-            first=validated_data['first'],
-            last=validated_data['last']
-        )
-
-        favalbum_instance = FavAlbums.objects.create(profile=profile)
-        favalbum_instance.save()
-        return profile
 
 
 class LoginSerializer(serializers.Serializer):
