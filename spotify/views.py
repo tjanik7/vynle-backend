@@ -27,31 +27,40 @@ class SetFavAlbum(APIView):
         if is_spotify_authenticated(user):
             album_id = request.data['album_id']
             ind = request.data['ind']
-            if not isinstance(ind, int):
-                return Response(
-                    {'msg': f"Index must be an int 0 <= ind < {str(SetFavAlbum.ALBUM_LIST_LEN)}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            if ind < 0 or ind >= SetFavAlbum.ALBUM_LIST_LEN:  # If index out of range
-                return Response(
-                    {'msg': f"Index must be an int 0 <= ind < {str(SetFavAlbum.ALBUM_LIST_LEN)}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
 
-            album_obj = get_spotify_album(user, album_id)
-            if album_obj is None:
-                return Response(
-                    "This album could not be found",
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+            # Don't need to fetch anything from Spotify if we're simply clearing out a release field
+            if len(album_id) > 0:
+                if not isinstance(ind, int):
+                    return Response(
+                        {'msg': f"Index must be an int 0 <= ind < {str(SetFavAlbum.ALBUM_LIST_LEN)}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                if ind < 0 or ind >= SetFavAlbum.ALBUM_LIST_LEN:  # If index out of range
+                    return Response(
+                        {'msg': f"Index must be an int 0 <= ind < {str(SetFavAlbum.ALBUM_LIST_LEN)}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                album_obj = get_spotify_album(user, album_id)
+                if album_obj is None:
+                    return Response(
+                        "This album could not be found",
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+            # Got empty album ID, so reset this field (to be empty)
+            else:  # TODO: potentially extract creation of release dicts to a class
+                album_obj = {  # Return empty album (either release URI was empty or album could not be found)
+                    'name': '',  # Name of album
+                    'artist': '',  # Name of first artist listed
+                    'img': '',  # Medium img - 300x300
+                }
 
             user_albums = user.profile.favorite_albums
-
             setattr(user_albums, 'a' + str(ind), album_id)
-
             user_albums.save()
 
             return Response(album_obj, status=status.HTTP_200_OK)
+        return None
 
 
 # Accepts user and index as args and returns fav album at that index
