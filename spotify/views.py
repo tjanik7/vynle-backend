@@ -146,7 +146,7 @@ class SearchSpotify(APIView):
             payload = {
                 'q': q,
                 'type': 'album',
-                'limit': '5'
+                'limit': '10'
             }
 
             headers = get_header(user)
